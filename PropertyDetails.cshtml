@@ -1,0 +1,92 @@
+﻿@using System.Web.Script.Serialization;
+@model GeoApplication.Models.PropertyViewModel
+@{
+    ViewBag.Title = "Properties App";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@{
+    string data = new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(Model);
+}
+
+<form>
+    <div id="PropertyApp">
+        <h1></h1>
+        <div class="form-inline">
+            <div class="form-group">
+                <label for="postcode">Post Code : </label>
+                <input type="text" class="form-control" id="" placeholder="Search" data-bind="value:Search">
+
+            </div>
+            <button type="button" class="btn btn-primary" data-bind="click:GetData">Search</button>
+        </div>
+
+        <br />
+        <!-- ko if: Properties().length > 0 -->
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th scope="col">Property Name</th>
+                    <th scope="col">Last Sold Price</th>
+                </tr>
+            </thead>
+
+            <tbody data-bind="foreach: Properties">
+                <tr>
+                    <td><span data-bind="text: Name"></span></td>
+                    <td><i>£</i><span data-bind="text: Number"></span></td>
+
+                </tr>
+
+            </tbody>
+        </table>
+        <!-- /ko -->
+    </div>
+
+</form>
+
+<script type="text/javascript">
+    var JH = JH || {};
+    JH.Property = {
+        Init: function (data) {
+            var container = document.getElementById("PropertyApp");
+            var viewModel = new JH.Property.AppViewModel(data);
+            ko.cleanNode(container);
+            ko.applyBindings(viewModel,container);
+        },
+        AppViewModel : function(data) {
+            var self = this;
+            ko.mapping.fromJS(data, {}, self);
+            self.GetData = function () {
+
+                var self = this;
+                var value = self.Search();
+                $.ajax({
+                    url: "/Geo/GetDetailsByPrefix/",
+                    type: "get", //send it through get method
+                    data: {
+                        prefix: value
+
+                    },
+                    success: function (response) {
+                        JH.Property.Bind(response);
+                    },
+                    error: function (xhr) {
+                    }
+                });
+            }
+        },
+        Bind: function (data) {
+            var container = document.getElementById("PropertyApp");
+            var model = ko.dataFor(container);
+            if (model == null) {
+                var data = JH.Property.AppViewModel(model);
+                ko.applyBindings(data, container);
+            }
+            else {
+                ko.mapping.fromJS(data, {}, model);
+            }
+        }
+    }
+
+   JH.Property.Init(@Html.Raw(data));
+</script>
